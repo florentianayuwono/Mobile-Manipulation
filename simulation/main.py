@@ -365,8 +365,8 @@ mobot.get_observation()
 
 
 for pos in path:
-    move_to_waypoint(pos, mobot.robotId)
-    p.stepSimulation()
+    move_to_waypoint(pos, mobot.robotId, 1000)
+    # p.stepSimulation()
 
 
 

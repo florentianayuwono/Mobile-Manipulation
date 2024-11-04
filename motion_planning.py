@@ -1,4 +1,5 @@
 import pybullet as p
+import time
 
 x_min, x_max = -1, 4  # Adjust according to your environment's dimensions
 y_min, y_max = -5, 1
@@ -172,10 +173,19 @@ def find_path(start_pos, goal_pos):
 
 
 # write a move to waypoint function
-def move_to_waypoint(target_pos, robotId):
+def move_to_waypoint(target_pos, robotId, steps):
     position, orientation = p.getBasePositionAndOrientation(robotId)
-    p.resetBasePositionAndOrientation(robotId, [target_pos[0], target_pos[1],0.1], orientation)
+    # p.resetBasePositionAndOrientation(robotId, [target_pos[0], target_pos[1],0.1], orientation)
+    start_pos, _ = p.getBasePositionAndOrientation(robotId)
+    step_size = [(t - s) / steps for s, t in zip(start_pos, target_pos)]
 
+    for _ in range(steps):
+        # Incrementally move the robot base
+        new_position = [s + step_size[i] for i, s in enumerate(start_pos)]
+        p.resetBasePositionAndOrientation(robotId, new_position, orientation)
+        p.stepSimulation()
+        time.sleep(1. / 240.)
+        start_pos = new_position
 
 
 # example usage
