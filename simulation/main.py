@@ -5,6 +5,7 @@ import sys
 import os
 import pybullet as p
 from stretch import Robot
+from motion_planning import *
 
 p.connect(p.GUI)
 p.configureDebugVisualizer(p.COV_ENABLE_GUI, 1)
@@ -29,12 +30,7 @@ plane_id = p.loadURDF(os.path.join(root_dir,"resource/urdf/plane.urdf"), [0, 0, 
 plane_texture_id = p.loadTexture(os.path.join(root_dir,"resource/texture/texture1.jpg"))
 p.changeVisualShape(0,-1,textureUniqueId=plane_texture_id)
 
-################ Robot
-mobot_urdf_file = os.path.join(root_dir,"resource/urdf/stretch/stretch.urdf")
-mobot = Robot(pybullet_api=p, start_pos=[-0.8,0.0,0.05], urdf_file=mobot_urdf_file)
 
-for _ in range(30):
-    p.stepSimulation()
 
 
 ################
@@ -120,29 +116,29 @@ urdf_dir = os.path.join(root_dir,"resource/urdf")
 
 table_z = p.getAABB(table_id)[1][2]
 
-cabinet2_position = [-1.5, 0.25, table_z+ 1.5]
-cabinet2_scaling = 0.7
-cabinet2_orientation = p.getQuaternionFromEuler([0, 0, np.pi])
-cabinet2_id = p.loadURDF(fileName=os.path.join(urdf_dir,"obj_libs/cabinets/c2/mobility.urdf"),\
-                                   useFixedBase=True,
-                                   basePosition=cabinet2_position,\
-                                   baseOrientation=cabinet2_orientation,\
-                                   globalScaling=cabinet2_scaling)
+# cabinet2_position = [-1.5, 0.25, table_z+ 1.5]
+# cabinet2_scaling = 0.7
+# cabinet2_orientation = p.getQuaternionFromEuler([0, 0, np.pi])
+# cabinet2_id = p.loadURDF(fileName=os.path.join(urdf_dir,"obj_libs/cabinets/c2/mobility.urdf"),\
+#                                    useFixedBase=True,
+#                                    basePosition=cabinet2_position,\
+#                                    baseOrientation=cabinet2_orientation,\
+#                                    globalScaling=cabinet2_scaling)
 
-p.changeVisualShape(cabinet2_id,2,rgbaColor=[0.5,0.5,0.5,1])
-p.changeVisualShape(cabinet2_id,1,rgbaColor=[1,1,1,1])
-p.changeVisualShape(cabinet2_id,3,rgbaColor=[1,1,1,1])
-p.changeVisualShape(cabinet2_id,4,rgbaColor=[0.5,0.5,0.5,1])
+# p.changeVisualShape(cabinet2_id,2,rgbaColor=[0.5,0.5,0.5,1])
+# p.changeVisualShape(cabinet2_id,1,rgbaColor=[1,1,1,1])
+# p.changeVisualShape(cabinet2_id,3,rgbaColor=[1,1,1,1])
+# p.changeVisualShape(cabinet2_id,4,rgbaColor=[0.5,0.5,0.5,1])
 
 
-cabinet_center_x = 1.35 #+ (p.getAABB(table_id)[1][0] - p.getAABB(cabinet1_id)[1][0])/2.0
-cabinet_center_y = -1.25#cabinet_width/2.0
-cabinet_center_z = 1.4
+# cabinet_center_x = 1.35 #+ (p.getAABB(table_id)[1][0] - p.getAABB(cabinet1_id)[1][0])/2.0
+# cabinet_center_y = -1.25#cabinet_width/2.0
+# cabinet_center_z = 1.4
 
-#cabinet1_position = (cabinet_center_x, -cabinet_center_y, cabinet_center_z)
-cabinet2_position = (cabinet_center_x,  cabinet_center_y, cabinet_center_z)
-#p.resetBasePositionAndOrientation(cabinet1_id, cabinet1_position, cabinet1_orientation)
-p.resetBasePositionAndOrientation(cabinet2_id, cabinet2_position, cabinet2_orientation)
+# #cabinet1_position = (cabinet_center_x, -cabinet_center_y, cabinet_center_z)
+# cabinet2_position = (cabinet_center_x,  cabinet_center_y, cabinet_center_z)
+# #p.resetBasePositionAndOrientation(cabinet1_id, cabinet1_position, cabinet1_orientation)
+# p.resetBasePositionAndOrientation(cabinet2_id, cabinet2_position, cabinet2_orientation)
 
 ############################
 #### fridge initialization
@@ -333,6 +329,16 @@ obj_friction_ceof = 4000.0
 p.changeDynamics(mug_id, -1, lateralFriction=obj_friction_ceof)
 p.changeDynamics(mug_id, -1, mass=0.01)
 
+obstacles = [table_id, wall_id, wall_id_back, wall_id_front, wall_left_id, wall_right_id, wall_right_id2, fridge_id, drawer_id, bed_id, microwave_id, box_id, bottle_id, bowl_id, mug_id, trashbin_id, pan_id, spatula_id]
+
+path = find_path((-1,0),(3,0), obstacles)
+
+################ Robot
+mobot_urdf_file = os.path.join(root_dir,"resource/urdf/stretch/stretch.urdf")
+mobot = Robot(pybullet_api=p, start_pos=[-0.8,0.0,0.05], urdf_file=mobot_urdf_file)
+
+for _ in range(30):
+    p.stepSimulation()
 
 
 for _ in range(20):
@@ -347,13 +353,22 @@ for j in range (p.getNumJoints(mobot.robotId)):
     print(p.getJointInfo(mobot.robotId,j))
 forward=0
 turn=0
-speed=10
+speed=0
 
 for _ in range(30):
     p.stepSimulation()
 
 
 mobot.get_observation()
+
+
+
+
+for pos in path:
+    move_to_waypoint(pos, mobot.robotId)
+    p.stepSimulation()
+
+
 
 while (1):
     time.sleep(1./240.)
